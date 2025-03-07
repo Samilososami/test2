@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ver Foto de Perfil de Instagram</title>
+</head>
+<body>
+    <h2>Ver Foto de Perfil de Instagram</h2>
+    <input type="text" id="username" placeholder="Nombre de usuario">
+    <button onclick="showProfilePicture()">Mostrar Foto</button>
+    <br><br>
+    <img id="profile-pic" src="" alt="Foto de perfil" width="200" style="display:none; border-radius: 50%;">
+    
+    <script>
+        async function showProfilePicture() {
+            const username = document.getElementById("username").value;
+            if (!username) return alert("Introduce un nombre de usuario");
+
+            const url = `https://www.instagram.com/${username}/?__a=1&__d=1`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const profilePic = data.graphql.user.profile_pic_url_hd; // URL de la foto en alta calidad
+                
+                document.getElementById("profile-pic").src = profilePic;
+                document.getElementById("profile-pic").style.display = "block";
+
+            } catch (error) {
+                alert("No se pudo obtener la foto. El perfil puede ser privado o Instagram ha bloqueado el acceso.");
+            }
+        }
+    </script>
+</body>
+</html>
