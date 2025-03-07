@@ -3,35 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ver Foto de Perfil de Instagram</title>
+    <title>Buscador de Perfiles de Instagram</title>
+    <style>
+        :root {
+            --primary: #e1306c;
+            --secondary: #405de6;
+            --background: #fafafa;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: var(--background);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        input {
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            width: 300px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(225, 48, 108, 0.2);
+        }
+
+        button {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .profile-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .profile-img {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 1rem;
+            border: 4px solid var(--primary);
+        }
+
+        .loading {
+            display: none;
+            margin: 2rem 0;
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+
+        .error {
+            color: #ff0000;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0,0,0,0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+    </style>
 </head>
 <body>
-    <h2>Ver Foto de Perfil de Instagram</h2>
-    <input type="text" id="username" placeholder="Nombre de usuario">
-    <button onclick="showProfilePicture()">Mostrar Foto</button>
-    <br><br>
-    <img id="profile-pic" src="" alt="Foto de perfil" width="200" style="display:none; border-radius: 50%;">
-    
+    <div class="container">
+        <h1>🦄 Buscador de Instagram</h1>
+        
+        <div class="search-box">
+            <input type="text" id="username" placeholder="Nombre de usuario">
+            <button onclick="buscarPerfil()">Buscar</button>
+        </div>
+
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Buscando perfil...</p>
+        </div>
+
+        <div class="profile-card">
+            <img src="" alt="Foto de perfil" class="profile-img" id="profile-pic">
+        </div>
+
+        <div class="error" id="error-message"></div>
+    </div>
+
     <script>
-        async function showProfilePicture() {
-            const username = document.getElementById("username").value;
-            if (!username) return alert("Introduce un nombre de usuario");
+        async function buscarPerfil() {
+            const username = document.getElementById('username').value.trim();
+            const profileCard = document.querySelector('.profile-card');
+            const loading = document.querySelector('.loading');
+            const errorMsg = document.getElementById('error-message');
 
-            const url = `https://www.instagram.com/${username}/?__a=1&__d=1`;
+            // Resetear vista
+            profileCard.style.display = 'none';
+            errorMsg.style.display = 'none';
+            
+            if (!username) {
+                mostrarError('Por favor ingresa un nombre de usuario');
+                return;
+            }
 
+            loading.style.display = 'block';
+            
             try {
-                const response = await fetch(url);
-                const data = await response.json();
+                // Usar proxy para evitar CORS
+                const response = await fetch(`https://cors-anywhere.herokuapp.com/https://www.instagram.com/${username}/?__a=1&__d=dis`);
                 
-                const profilePic = data.graphql.user.profile_pic_url_hd; // URL de la foto en alta calidad
-                
-                document.getElementById("profile-pic").src = profilePic;
-                document.getElementById("profile-pic").style.display = "block";
+                if (!response.ok) {
+                    throw new Error('Usuario no encontrado');
+                }
 
+                const data = await response.json();
+                const profilePic = data.graphql.user.profile_pic_url_hd;
+                
+                mostrarFoto(profilePic);
             } catch (error) {
-                alert("No se pudo obtener la foto. El perfil puede ser privado o Instagram ha bloqueado el acceso.");
+                mostrarError(error.message || 'Error al obtener el perfil');
+            } finally {
+                loading.style.display = 'none';
             }
         }
+
+        function mostrarFoto(url) {
+            const profileCard = document.querySelector('.profile-card');
+            const profileImg = document.getElementById('profile-pic');
+            
+            profileImg.src = url;
+            profileImg.onload = () => {
+                profileCard.style.display = 'block';
+                profileImg.style.animation = 'fadeIn 0.5s ease';
+            };
+        }
+
+        function mostrarError(mensaje) {
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.textContent = mensaje;
+            errorMsg.style.display = 'block';
+        }
+
+        // Permitir Enter para buscar
+        document.getElementById('username').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') buscarPerfil();
+        });
     </script>
 </body>
 </html>
